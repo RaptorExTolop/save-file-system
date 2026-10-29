@@ -1,116 +1,59 @@
-#+feature using-stmt
 package main
 
-import "core:os"
+import "core:reflect"
 import "core:fmt"
-
-Struct_Values :: struct {
-    some_string: string,
-    some_int: i32,
-    some_float: f32
+Some_Struct :: struct {
+	some_int: i32,
+	some_float: f32,
+	some_bool: bool,
+	some_string: string,
+	some_vec2: [2]f32,
 }
 
-test_struct := Struct_Values{ 
-    some_float = 4.20, some_int = 69, some_string = "your mum" 
-}
+// STRUCT_NAME FILE_VERSION (version needed?)
+// VALUE_IDENTIFIER EXPECTED_TYPE VALUE
+/*
 
-@(private)
-// @TODO: vectors could be nice
-Registry_Data_Types :: enum u8 {
-    I32, F32, BOOL, STRING, UNKNOWN
-}
+* [x] Get the struct name
+* [x] Get the variable names for each one
+* [x] Get their types
+* [x] And I guess get there values
+* [ ] Set the value
 
-Registered_Data :: struct {
-    name: string, type: Registry_Data_Types, data: rawptr
-}
-
-Data_Registry :: struct {
-	filename: string, entries: [dynamic]Registered_Data
-}
-
-add_data_to_registry :: proc(
-    using registry: ^Data_Registry, name: string, value: ^$T,
-) -> (err: string) where T == i32 || T == f32 || T == bool || T == string {
-	type := data_kind_of(T)
-	append(&entries, Registered_Data{
-		name = name, type = type, data = cast(rawptr)value
-	})
-	return "None"
-}
-
-get_data_from_registry :: proc(
-	registry: ^Data_Registry, name: string, out: ^$T
-) -> (err: string) where T == i32 || T == f32 || T == bool || T == string {
-	for entry in registry.entries {
-		if (entry.name != name) { continue }
-		type := data_kind_of(T)
-		is_type_valid := entry.type != type || type == .UNKNOWN
-		if (is_type_valid) { 
-			fmt.printf(
-				"WARNING: getting %v from registry expected %v got %v\n", 
-				entry.name, entry.type, data_kind_of(T)
-			)
-			return "None" 
-		}
-		out^ = (cast(^T)entry.data)^
-	}
-	return "None"
-}
-
-data_kind_of :: proc($T: typeid) -> (kind: Registry_Data_Types) {
-	when T == i32 {
-		return .I32
-	} else when T == f32 {
-		return .F32
-	} else when T == bool {
-		return .BOOL
-	} else when T == string {
-		return .STRING
-	} else {
-		return .UNKNOWN
-	}
-}
-
-set_data_to_registry :: proc(
-	registry: ^Data_Registry, name: string, value: ^$T
-) -> (err: string) where T == i32 || T == f32 || T == bool || T == string {
-	for entry in registry.entries {
-		if (entry.name != name) { continue }
-		type := data_kind_of(T)
-		is_type_valid := entry.type != type || type == .UNKNOWN
-		if (is_type_valid) { 
-			fmt.printf(
-				"WARNING: getting %v from registry expected %v got %v\n", 
-				entry.name, entry.type, data_kind_of(T)
-			)
-			return "None" 
-		}
-		entry.data = rawptr(value)
-	}
-	return "None"
-}
+*/
 
 main :: proc() {
-    test_int   : i32    = 69
-    test_float : f32    = 4.20
-    test_bool  : bool   = false
-    test_string: string = "your mum"
-    test_registry: Data_Registry = { 
-		filename = "Data", entries = make([dynamic]Registered_Data)
+	some_struct := Some_Struct{
+		some_bool = false, some_float = 4.20, some_int = 69, some_string = "your mum", some_vec2 = { 420, 69 }
 	}
 
-	defer delete(test_registry.entries)
-    add_data_to_registry(&test_registry, "test_int", &test_int)
-    add_data_to_registry(&test_registry, "test_float", &test_float)
-    add_data_to_registry(&test_registry, "test_bool", &test_bool)
-    add_data_to_registry(&test_registry, "test_string", &test_string)
+	// Get's the name of the struct 
+	// Type of must return the underlying type (e.g. the Some_Struct in this case)
+	// Then we get the type_id of that type, which get's us the name
+	type_id := typeid_of(type_of(some_struct))
+	name := type_id
+	fmt.printf("Struct name is: %v\n", name)
+	
+	// so the base info is the information about the underlying struct 
+	base_info := reflect.type_info_base(type_info_of(type_id))
+	//fmt.printf("Base info: %v\n", base_info)
 
-	query := "test_int"
-	test_get_int: i32
-	err := get_data_from_registry(&test_registry, query, &test_get_int)
-	if (err != "None") {
-		fmt.printf("Unable to get data from registry %v\n", err)
+	// interesting to look at it underneath the hood. So the varient contains the actual data
+	// for each variable, which was def an interesting read
+	//fmt.printf("Flags: %v\n", base_info.variant)
+
+	{ // get the values
+	for field in reflect.struct_fields_zipped(name) {
+		val := reflect.struct_field_value(some_struct, field)
+		fmt.printf("Name: %v. Type: %v. Value: %v\n", field.name, field.type, val)
 	}
-	fmt.printf("Got value %v from query %v\n", test_get_int, query)
+	}
+
+	{ // set some values
+	some_struct_ptr := &some_struct
+	for field in reflect.struct_fields_zipped(name) {
+		
+	}
+	}
 }
 
